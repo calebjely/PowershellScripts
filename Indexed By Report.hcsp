@@ -1,0 +1,241 @@
+<!DOCTYPE HTML>
+<html>
+
+<head>
+  <meta charset="utf-8">
+  <title>Indexed By Report</title>
+
+  <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.1/css/theme.grey.css">
+  <style>
+    body {
+      font-family: Arial, sans-serif;
+      margin: 0px auto;
+      max-width: 1200px;
+    }
+
+    div.div-padding {
+      padding: 0px 20px;
+    }
+
+    h2 {
+      text-align: center;
+      margin: 40px 0 20px 0;
+    }
+
+    h3 {
+      font-weight: normal;
+      margin-top: 20px;
+    }
+
+    .columns {
+      display: flex;
+      gap: 20px;
+    }
+
+    .column {
+      flex: 1;
+    }
+
+    table.tablesorter {
+      width: 100%;
+      border-collapse: collapse;
+      margin-bottom: 20px;
+    }
+
+    th,
+    td {
+      padding: 8px 12px;
+      text-align: left;
+    }
+
+    th {
+      background-color: #ccc;
+      color: #333;
+      cursor: pointer;
+    }
+
+    tr:nth-child(even) {
+      background-color: #eee;
+    }
+
+    tr:nth-child(odd) {
+      background-color: #fff;
+    }
+
+    .total-row td {
+      font-weight: bold;
+      background-color: #ddd;
+    }
+  </style>
+
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.1/js/jquery.tablesorter.combined.min.js"></script>
+  <script>
+    $(function () {
+      const includeWeekends = false;
+
+      $(".section").each(function () {
+        const heading = $(this).find("h3").text();
+        if (!includeWeekends && (heading.startsWith("Saturday") || heading.startsWith("Sunday"))) {
+          $(this).hide();
+        }
+      });
+
+      $("table.tablesorter").each(function () {
+        $(this).tablesorter({
+          theme: "grey",
+          headers: { 1: { sorter: "digit" } },
+          sortList: [[1, 1]],
+          widgets: ["zebra"]
+        });
+
+        let total = 0;
+        $(this).find("tbody tr").each(function () {
+          const val = parseInt($(this).find("td:eq(1)").text(), 10);
+          if (!isNaN(val)) total += val;
+        });
+        $(this).append(`<tfoot><tr class="total-row"><td>Total</td><td>${total}</td></tr></tfoot>`);
+      });
+    });
+  </script>
+</head>
+
+<body>
+  <div class="div-padding">
+    <h2>Indexed By Report</h2>
+    <div class="columns">
+      <div class="column">
+        <!-- TODAY -->
+        <div class="section">
+          <h3>Today - <!--$formatDateWithPattern(dateCurrent(),"M/d")--></h3>
+          <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent())$>`"-->
+          <!--$ResultCount = 1-->
+          <!--$executeService("GET_SEARCH_RESULTS")-->
+          <table class="tablesorter">
+            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <tbody><!--$loop SearchResultNavigationxIndexedBy-->
+              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
+            <!--$endloop--></tbody>
+          </table>
+        </div>
+		
+        <!-- YESTERDAY -->
+        <div class="section">
+          <h3>Yesterday - <!--$formatDateWithPattern(dateCurrent(-1),"M/d")--></h3>
+          <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-1))$>` <AND> dCreateDate < `<$formatDateOnly(dateCurrent())$>`"-->
+          <!--$ResultCount = 1-->
+          <!--$executeService("GET_SEARCH_RESULTS")-->
+          <table class="tablesorter">
+            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <tbody><!--$loop SearchResultNavigationxIndexedBy-->
+              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
+            <!--$endloop--></tbody>
+          </table>
+        </div>
+
+        <!-- DAY -2 -->
+        <div class="section">
+          <h3><!--$formatDateWithPattern(dateCurrent(-2),"EEEE '-' M/d")--></h3>
+          <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-2))$>` <AND> dCreateDate < `<$formatDateOnly(dateCurrent(-1))$>`"-->
+          <!--$ResultCount = 1-->
+          <!--$executeService("GET_SEARCH_RESULTS")-->
+          <table class="tablesorter">
+            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <tbody><!--$loop SearchResultNavigationxIndexedBy-->
+              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
+            <!--$endloop--></tbody>
+          </table>
+        </div>
+
+        <!-- DAY -3 -->
+        <div class="section">
+          <h3><!--$formatDateWithPattern(dateCurrent(-3),"EEEE '-' M/d")--></h3>
+          <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-3))$>` <AND> dCreateDate < `<$formatDateOnly(dateCurrent(-2))$>`"-->
+          <!--$ResultCount = 1-->
+          <!--$executeService("GET_SEARCH_RESULTS")-->
+          <table class="tablesorter">
+            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <tbody><!--$loop SearchResultNavigationxIndexedBy-->
+              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
+            <!--$endloop--></tbody>
+          </table>
+        </div>
+
+        <!-- DAY -4 -->
+        <div class="section">
+          <h3><!--$formatDateWithPattern(dateCurrent(-4),"EEEE '-' M/d")--></h3>
+          <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-4))$>` <AND> dCreateDate < `<$formatDateOnly(dateCurrent(-3))$>`"-->
+          <!--$ResultCount = 1-->
+          <!--$executeService("GET_SEARCH_RESULTS")-->
+          <table class="tablesorter">
+            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <tbody><!--$loop SearchResultNavigationxIndexedBy-->
+              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
+            <!--$endloop--></tbody>
+          </table>
+        </div>
+
+        <!-- DAY -5 -->
+        <div class="section">
+          <h3><!--$formatDateWithPattern(dateCurrent(-5),"EEEE '-' M/d")--></h3>
+          <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-5))$>` <AND> dCreateDate < `<$formatDateOnly(dateCurrent(-4))$>`"-->
+          <!--$ResultCount = 1-->
+          <!--$executeService("GET_SEARCH_RESULTS")-->
+          <table class="tablesorter">
+            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <tbody><!--$loop SearchResultNavigationxIndexedBy-->
+              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
+            <!--$endloop--></tbody>
+          </table>
+        </div>
+
+        <!-- DAY -6 -->
+        <div class="section">
+          <h3><!--$formatDateWithPattern(dateCurrent(-6),"EEEE '-' M/d")--></h3>
+          <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-6))$>` <AND> dCreateDate < `<$formatDateOnly(dateCurrent(-5))$>`"-->
+          <!--$ResultCount = 1-->
+          <!--$executeService("GET_SEARCH_RESULTS")-->
+          <table class="tablesorter">
+            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <tbody><!--$loop SearchResultNavigationxIndexedBy-->
+              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
+            <!--$endloop--></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- LAST 30 DAYS -->
+      <div class="column">
+        <div class="section">
+          <h3>Last 30 Days</h3>
+          <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-30))$>` <AND> dCreateDate < `<$formatDateOnly(dateCurrent())$>`"-->
+          <!--$ResultCount = 1-->
+          <!--$executeService("GET_SEARCH_RESULTS")-->
+          <table class="tablesorter">
+            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <tbody><!--$loop SearchResultNavigationxIndexedBy-->
+              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
+            <!--$endloop--></tbody>
+          </table>
+        </div>
+      </div>
+
+      <!-- LAST 365 DAYS -->
+      <div class="column">
+        <div class="section">
+          <h3>Last 365 Days</h3>
+          <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-365))$>` <AND> dCreateDate < `<$formatDateOnly(dateCurrent())$>`"-->
+          <!--$ResultCount = 1-->
+          <!--$executeService("GET_SEARCH_RESULTS")-->
+          <table class="tablesorter">
+            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <tbody><!--$loop SearchResultNavigationxIndexedBy-->
+              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
+            <!--$endloop--></tbody>
+          </table>
+        </div>
+      </div>
+    </div>
+  </div>
+</body>
+</html>
