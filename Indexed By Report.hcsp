@@ -1,10 +1,8 @@
 <!DOCTYPE HTML>
 <html>
-
 <head>
   <meta charset="utf-8">
   <title>Indexed By Report</title>
-
   <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.1/css/theme.grey.css">
   <style>
     body {
@@ -14,32 +12,40 @@
     }
 
     div.div-padding {
-      padding: 0px 20px;
+      padding: 0px;
     }
 
     h2 {
-      text-align: center;
-      margin: 40px 0 20px 0;
+      margin: 10px 0 0 0;
+      font-size: 30px;
     }
 
     h3 {
-      font-weight: normal;
-      margin-top: 20px;
+      margin: 60px 0 0 0;
+      font-weight: bold;
+      background: #000000;
+      padding: 11px;
+      color: white;
     }
 
     .columns {
       display: flex;
-      gap: 20px;
+      gap: 0px;
     }
 
     .column {
       flex: 1;
+      padding: 20px 40px;
+      border-right: 1px solid black;
+    }
+
+    .column:first-of-type {
+      border-left: 1px solid black;
     }
 
     table.tablesorter {
       width: 100%;
       border-collapse: collapse;
-      margin-bottom: 20px;
     }
 
     th,
@@ -66,18 +72,67 @@
       font-weight: bold;
       background-color: #ddd;
     }
-  </style>
 
+    span.day {
+      display: none;
+    }
+
+    .heading-with-button {
+      display: flex;
+      justify-content: space-between;
+      align-items: center;
+      gap: 10px;
+    }
+
+    .heading-with-button button {
+      font-size: 14px;
+      padding: 6px 12px;
+      background-color: #004080;
+      color: white;
+      border: none;
+      border-radius: 4px;
+      cursor: pointer;
+    }
+
+    .heading-with-button button:hover {
+      background-color: #0066cc;
+    }
+  </style>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.3.1/jquery.min.js"></script>
   <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery.tablesorter/2.31.1/js/jquery.tablesorter.combined.min.js"></script>
+  <script src="https://cdnjs.cloudflare.com/ajax/libs/xlsx/0.18.5/xlsx.full.min.js"></script>
   <script>
+    function downloadTable(button) {
+      const section = button.closest('.section');
+      const heading = section.querySelector('span').innerText.split(' - ')[1].trim();
+      const visibleTable = section.querySelector('table.tablesorter');
+      const recordsTable = section.querySelector('table.hidden-records');
+
+      const wb = XLSX.utils.book_new();
+
+      // Sheet 1: Indexed By results
+      const wsMain = XLSX.utils.table_to_sheet(visibleTable);
+      XLSX.utils.book_append_sheet(wb, wsMain, "Numbers");
+
+      // Sheet 2: Full SearchResults
+      const wsRecords = XLSX.utils.table_to_sheet(recordsTable);
+      XLSX.utils.book_append_sheet(wb, wsRecords, "Records");
+      const sanitizedHeading = heading.replace(/\//g, ".");
+      const filename = `${sanitizedHeading} Numbers.xlsx`;
+      XLSX.writeFile(wb, filename);
+    }
+
     $(function () {
-      const includeWeekends = false;
 
       $(".section").each(function () {
-        const heading = $(this).find("h3").text();
-        if (!includeWeekends && (heading.startsWith("Saturday") || heading.startsWith("Sunday"))) {
+        const dayName = $(this).find("span.day").text().trim().toLowerCase();
+
+        if (dayName === "saturday" || dayName === "sunday") {
           $(this).hide();
+        } else if (dayName){
+          const btn = $('<button>Download Excel</button>');
+          $(this).find('span.heading-text').after(btn);
+          btn.on('click', function () { downloadTable(this); });
         }
       });
 
@@ -102,140 +157,391 @@
 
 <body>
   <div class="div-padding">
-    <h2>Indexed By Report</h2>
     <div class="columns">
       <div class="column">
+        <h2>Daily Numbers</h2>
         <!-- TODAY -->
         <div class="section">
-          <h3>Today - <!--$formatDateWithPattern(dateCurrent(),"M/d")--></h3>
+          <h3 class="heading-with-button">
+            <span class="day"><!--$formatDateWithPattern(dateCurrent(),"EEEE")--></span><span class="heading-text">Today (So Far) - <!--$formatDateWithPattern(dateCurrent(),"M/d")--></span>
+          </h3>
           <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent())$>`"-->
-          <!--$ResultCount = 1-->
+          <!--$ResultCount = 5000-->
           <!--$executeService("GET_SEARCH_RESULTS")-->
           <table class="tablesorter">
-            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Indexed By</th>
+                <th>Count</th>
+              </tr>
+            </thead>
             <tbody><!--$loop SearchResultNavigationxIndexedBy-->
-              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
-            <!--$endloop--></tbody>
+              <tr>
+                <td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td>
+                <td><!--$count--></td>
+              </tr>
+              <!--$endloop-->
+            </tbody>
+          </table>
+          <table class="hidden-records" style="display:none;">
+            <thead>
+              <tr>
+                <th>Content Id</th>
+                <th>Indexed By</th>
+                <th>Create Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!--$loop SearchResults-->
+              <tr>
+                <td><!--$dDocName--></td>
+                <td><!--$xIndexedBy--></td>
+                <td><!--$dCreateDate--></td>
+              </tr>
+              <!--$endloop-->
+            </tbody>
           </table>
         </div>
-		
+
         <!-- YESTERDAY -->
         <div class="section">
-          <h3>Yesterday - <!--$formatDateWithPattern(dateCurrent(-1),"M/d")--></h3>
-          <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-1))$>` <AND> dCreateDate < `<$formatDateOnly(dateCurrent())$>`"-->
-          <!--$ResultCount = 1-->
+          <h3 class="heading-with-button">
+            <span class="day"><!--$formatDateWithPattern(dateCurrent(-1),"EEEE")--></span><span class="heading-text">Yesterday - <!--$formatDateWithPattern(dateCurrent(-1),"M/d")--></span>
+          </h3>
+          <!--$QueryText = "dCreateDate >= `<!--$formatDateOnly(dateCurrent(-1))-->` <AND> dCreateDate < `<$formatDateOnly(dateCurrent())$>`"-->
+          <!--$ResultCount = 5000-->
           <!--$executeService("GET_SEARCH_RESULTS")-->
           <table class="tablesorter">
-            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Indexed By</th>
+                <th>Count</th>
+              </tr>
+            </thead>
             <tbody><!--$loop SearchResultNavigationxIndexedBy-->
-              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
-            <!--$endloop--></tbody>
+              <tr>
+                <td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td>
+                <td><!--$count--></td>
+              </tr>
+              <!--$endloop-->
+            </tbody>
+          </table>
+          <table class="hidden-records" style="display:none;">
+            <thead>
+              <tr>
+                <th>Content Id</th>
+                <th>Indexed By</th>
+                <th>Create Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!--$loop SearchResults-->
+              <tr>
+                <td><!--$dDocName--></td>
+                <td><!--$xIndexedBy--></td>
+                <td><!--$dCreateDate--></td>
+              </tr>
+              <!--$endloop-->
+            </tbody>
           </table>
         </div>
 
         <!-- DAY -2 -->
         <div class="section">
-          <h3><!--$formatDateWithPattern(dateCurrent(-2),"EEEE '-' M/d")--></h3>
-          <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-2))$>` <AND> dCreateDate < `<$formatDateOnly(dateCurrent(-1))$>`"-->
-          <!--$ResultCount = 1-->
+          <h3 class="heading-with-button">
+            <span class="day"><!--$formatDateWithPattern(dateCurrent(-2),"EEEE")--></span><span class="heading-text"><!--$formatDateWithPattern(dateCurrent(-2),"EEEE '-' M/d")--></span>
+
+          </h3>
+          <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-2))$>` <AND> dCreateDate < `<!--$formatDateOnly(dateCurrent(-1))-->`"-->
+          <!--$ResultCount = 5000-->
           <!--$executeService("GET_SEARCH_RESULTS")-->
           <table class="tablesorter">
-            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Indexed By</th>
+                <th>Count</th>
+              </tr>
+            </thead>
             <tbody><!--$loop SearchResultNavigationxIndexedBy-->
-              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
-            <!--$endloop--></tbody>
+              <tr>
+                <td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td>
+                <td><!--$count--></td>
+              </tr>
+              <!--$endloop-->
+            </tbody>
+          </table>
+          <table class="hidden-records" style="display:none;">
+            <thead>
+              <tr>
+                <th>Content Id</th>
+                <th>Indexed By</th>
+                <th>Create Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!--$loop SearchResults-->
+              <tr>
+                <td><!--$dDocName--></td>
+                <td><!--$xIndexedBy--></td>
+                <td><!--$dCreateDate--></td>
+              </tr>
+              <!--$endloop-->
+            </tbody>
           </table>
         </div>
 
         <!-- DAY -3 -->
         <div class="section">
-          <h3><!--$formatDateWithPattern(dateCurrent(-3),"EEEE '-' M/d")--></h3>
+          <h3 class="heading-with-button">
+            <span class="day"><!--$formatDateWithPattern(dateCurrent(-3),"EEEE")--></span><span class="heading-text"><!--$formatDateWithPattern(dateCurrent(-3),"EEEE '-' M/d")--></span>
+          </h3>
           <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-3))$>` <AND> dCreateDate < `<$formatDateOnly(dateCurrent(-2))$>`"-->
-          <!--$ResultCount = 1-->
+          <!--$ResultCount = 5000-->
           <!--$executeService("GET_SEARCH_RESULTS")-->
           <table class="tablesorter">
-            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Indexed By</th>
+                <th>Count</th>
+              </tr>
+            </thead>
             <tbody><!--$loop SearchResultNavigationxIndexedBy-->
-              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
-            <!--$endloop--></tbody>
+              <tr>
+                <td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td>
+                <td><!--$count--></td>
+              </tr>
+              <!--$endloop-->
+            </tbody>
+          </table>
+          <table class="hidden-records" style="display:none;">
+            <thead>
+              <tr>
+                <th>Content Id</th>
+                <th>Indexed By</th>
+                <th>Create Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!--$loop SearchResults-->
+              <tr>
+                <td><!--$dDocName--></td>
+                <td><!--$xIndexedBy--></td>
+                <td><!--$dCreateDate--></td>
+              </tr>
+              <!--$endloop-->
+            </tbody>
           </table>
         </div>
 
         <!-- DAY -4 -->
         <div class="section">
-          <h3><!--$formatDateWithPattern(dateCurrent(-4),"EEEE '-' M/d")--></h3>
+          <h3 class="heading-with-button">
+            <span class="day"><!--$formatDateWithPattern(dateCurrent(-4),"EEEE")--></span><span class="heading-text"><!--$formatDateWithPattern(dateCurrent(-4),"EEEE '-' M/d")--></span>
+          </h3>
           <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-4))$>` <AND> dCreateDate < `<$formatDateOnly(dateCurrent(-3))$>`"-->
-          <!--$ResultCount = 1-->
+          <!--$ResultCount = 5000-->
           <!--$executeService("GET_SEARCH_RESULTS")-->
           <table class="tablesorter">
-            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Indexed By</th>
+                <th>Count</th>
+              </tr>
+            </thead>
             <tbody><!--$loop SearchResultNavigationxIndexedBy-->
-              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
-            <!--$endloop--></tbody>
+              <tr>
+                <td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td>
+                <td><!--$count--></td>
+              </tr>
+              <!--$endloop-->
+            </tbody>
+          </table>
+          <table class="hidden-records" style="display:none;">
+            <thead>
+              <tr>
+                <th>Content Id</th>
+                <th>Indexed By</th>
+                <th>Create Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!--$loop SearchResults-->
+              <tr>
+                <td><!--$dDocName--></td>
+                <td><!--$xIndexedBy--></td>
+                <td><!--$dCreateDate--></td>
+              </tr>
+              <!--$endloop-->
+            </tbody>
           </table>
         </div>
 
         <!-- DAY -5 -->
         <div class="section">
-          <h3><!--$formatDateWithPattern(dateCurrent(-5),"EEEE '-' M/d")--></h3>
+          <h3 class="heading-with-button">
+            <span class="day"><!--$formatDateWithPattern(dateCurrent(-5),"EEEE")--></span><span class="heading-text"><!--$formatDateWithPattern(dateCurrent(-5),"EEEE '-' M/d")--></span>
+          </h3>
           <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-5))$>` <AND> dCreateDate < `<$formatDateOnly(dateCurrent(-4))$>`"-->
-          <!--$ResultCount = 1-->
+          <!--$ResultCount = 5000-->
           <!--$executeService("GET_SEARCH_RESULTS")-->
           <table class="tablesorter">
-            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Indexed By</th>
+                <th>Count</th>
+              </tr>
+            </thead>
             <tbody><!--$loop SearchResultNavigationxIndexedBy-->
-              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
-            <!--$endloop--></tbody>
+              <tr>
+                <td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td>
+                <td><!--$count--></td>
+              </tr>
+              <!--$endloop-->
+            </tbody>
+          </table>
+          <table class="hidden-records" style="display:none;">
+            <thead>
+              <tr>
+                <th>Content Id</th>
+                <th>Indexed By</th>
+                <th>Create Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!--$loop SearchResults-->
+              <tr>
+                <td><!--$dDocName--></td>
+                <td><!--$xIndexedBy--></td>
+                <td><!--$dCreateDate--></td>
+              </tr>
+              <!--$endloop-->
+            </tbody>
           </table>
         </div>
 
         <!-- DAY -6 -->
         <div class="section">
-          <h3><!--$formatDateWithPattern(dateCurrent(-6),"EEEE '-' M/d")--></h3>
+          <h3 class="heading-with-button">
+            <span class="day"><!--$formatDateWithPattern(dateCurrent(-6),"EEEE")--></span><span class="heading-text"><!--$formatDateWithPattern(dateCurrent(-6),"EEEE '-' M/d")--></span>
+          </h3>
           <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-6))$>` <AND> dCreateDate < `<$formatDateOnly(dateCurrent(-5))$>`"-->
-          <!--$ResultCount = 1-->
+          <!--$ResultCount = 5000-->
           <!--$executeService("GET_SEARCH_RESULTS")-->
           <table class="tablesorter">
-            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Indexed By</th>
+                <th>Count</th>
+              </tr>
+            </thead>
             <tbody><!--$loop SearchResultNavigationxIndexedBy-->
-              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
-            <!--$endloop--></tbody>
+              <tr>
+                <td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td>
+                <td><!--$count--></td>
+              </tr>
+              <!--$endloop-->
+            </tbody>
+          </table>
+          <table class="hidden-records" style="display:none;">
+            <thead>
+              <tr>
+                <th>Content Id</th>
+                <th>Indexed By</th>
+                <th>Create Date</th>
+              </tr>
+            </thead>
+            <tbody>
+              <!--$loop SearchResults-->
+              <tr>
+                <td><!--$dDocName--></td>
+                <td><!--$xIndexedBy--></td>
+                <td><!--$dCreateDate--></td>
+              </tr>
+              <!--$endloop-->
+            </tbody>
           </table>
         </div>
       </div>
 
-      <!-- LAST 30 DAYS -->
+      <!-- LAST 7 DAYS -->
       <div class="column">
+        <h2>Long Term Numbers</h2>
         <div class="section">
-          <h3>Last 30 Days</h3>
+          <h3>
+            <span class="heading-text">Last Week (7 Days)</span>
+          </h3>
+          <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-7))$>` <AND> dCreateDate < `<$formatDateOnly(dateCurrent())$>`"-->
+          <!--$ResultCount = 5000-->
+          <!--$executeService("GET_SEARCH_RESULTS")-->
+          <table class="tablesorter">
+            <thead>
+              <tr>
+                <th>Indexed By</th>
+                <th>Count</th>
+              </tr>
+            </thead>
+            <tbody><!--$loop SearchResultNavigationxIndexedBy-->
+              <tr>
+                <td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td>
+                <td><!--$count--></td>
+              </tr>
+              <!--$endloop-->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- LAST 30 DAYS -->
+        <div class="section">
+          <h3>
+            <span class="heading-text">Last Month (30 Days)</span>
+          </h3>
           <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-30))$>` <AND> dCreateDate < `<$formatDateOnly(dateCurrent())$>`"-->
-          <!--$ResultCount = 1-->
+          <!--$ResultCount = 5000-->
           <!--$executeService("GET_SEARCH_RESULTS")-->
           <table class="tablesorter">
-            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Indexed By</th>
+                <th>Count</th>
+              </tr>
+            </thead>
             <tbody><!--$loop SearchResultNavigationxIndexedBy-->
-              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
-            <!--$endloop--></tbody>
+              <tr>
+                <td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td>
+                <td><!--$count--></td>
+              </tr>
+              <!--$endloop-->
+            </tbody>
           </table>
         </div>
-      </div>
 
-      <!-- LAST 365 DAYS -->
-      <div class="column">
+        <!-- LAST 365 DAYS -->
         <div class="section">
-          <h3>Last 365 Days</h3>
+          <h3>
+            <span class="heading-text">Last Year (365 Days)</span>
+          </h3>
           <!--$QueryText = "dCreateDate >= `<$formatDateOnly(dateCurrent(-365))$>` <AND> dCreateDate < `<$formatDateOnly(dateCurrent())$>`"-->
-          <!--$ResultCount = 1-->
+          <!--$ResultCount = 5000-->
           <!--$executeService("GET_SEARCH_RESULTS")-->
           <table class="tablesorter">
-            <thead><tr><th>Indexed By</th><th>Count</th></tr></thead>
+            <thead>
+              <tr>
+                <th>Indexed By</th>
+                <th>Count</th>
+              </tr>
+            </thead>
             <tbody><!--$loop SearchResultNavigationxIndexedBy-->
-              <tr><td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td><td><!--$count--></td></tr>
-            <!--$endloop--></tbody>
+              <tr>
+                <td><!--$if drillDownOptionValue--><!--$drillDownOptionValue--><!--$else-->[BLANK]<!--$endif--></td>
+                <td><!--$count--></td>
+              </tr>
+              <!--$endloop-->
+            </tbody>
           </table>
         </div>
       </div>
     </div>
   </div>
 </body>
+
 </html>
